@@ -1,0 +1,387 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kong
+  namespace: kong
+  annotations:
+    kuma.io/sidecar-injection: enabled
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-proxy
+  namespace: kong
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: kong-proxy
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    app: kong
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-proxy-ssl
+  namespace: kong
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: kong-proxy-ssl
+    port: 8443
+    targetPort: 8443
+    protocol: TCP
+  selector:
+    app: kong
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-admin
+  namespace: kong
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: kong-admin
+    port: 8001
+    targetPort: 8001
+    protocol: TCP
+  selector:
+    app: kong
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-admin-ssl
+  namespace: kong
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: kong-admin-ssl
+    port: 8444
+    targetPort: 8444
+    protocol: TCP
+  selector:
+    app: kong
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-manager
+  namespace: kong
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: kong-manager
+    port: 8002
+    targetPort: 8002
+    protocol: TCP
+  selector:
+    app: kong
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-manager-ssl
+  namespace: kong
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: kong-manager-ssl
+    port: 8445
+    targetPort: 8445
+    protocol: TCP
+  selector:
+    app: kong
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-portal
+  namespace: kong
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: kong-portal
+    port: 8003
+    targetPort: 8003
+    protocol: TCP
+  selector:
+    app: kong
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-portal-ssl
+  namespace: kong
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: kong-portal-ssl
+    port: 8446
+    targetPort: 8446
+    protocol: TCP
+  selector:
+    app: kong
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-portal-admin
+  namespace: kong
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: kong-portal-admin
+    port: 8004
+    targetPort: 8004
+    protocol: TCP
+  selector:
+    app: kong
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-portal-admin-ssl
+  namespace: kong
+spec:
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  ports:
+  - name: kong-portal-admin-ssl
+    port: 8447
+    targetPort: 8447
+    protocol: TCP
+  selector:
+    app: kong
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong-enterprise
+  namespace: kong
+spec:
+  selector:
+    matchLabels:
+      app: kong
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kuma.io/gateway: enabled
+        kuma.io/mesh: default
+      labels:
+        name: kong-enterprise
+        app: kong
+    spec:
+      imagePullSecrets:
+        - name: kong-enterprise-edition-docker
+      containers:
+      - name: kong
+        image: kong-docker-kong-gateway-docker.bintray.io/kong-enterprise-edition:2.3.2.0-alpine
+        env:
+          - name: KONG_ADMIN_LISTEN
+            value: '0.0.0.0:8001, 0.0.0.0:8444 ssl'
+          - name: KONG_ADMIN_API_URI
+            value: kong.local:8001
+          - name: KONG_ADMIN_GUI_AUTH
+            value: openid-connect
+          - name: KONG_ADMIN_GUI_URL
+            value: 'http://kong.local:8002'
+          - name: KONG_ADMIN_GUI_AUTH_CONF
+            value: '{"issuer": "http://keycloak.iam.svc.cluster.local:8080/auth/realms/master","client_id": ["kong"],"client_secret": ["<Client_Secret>"], "consumer_by": ["username","custom_id"], "ssl_verify": false, "consumer_claim": ["preferred_username"], "leeway": 60,"redirect_uri": ["http://kong.local:8002"],"login_redirect_uri": ["http://kong.local:8002"], "logout_methods": ["GET", "DELETE"],"logout_query_arg": "logout","logout_redirect_uri": ["http://kong.local:8002"],"scopes":["openid","profile","email","offline_access"],"authenticated_groups_claim": ["groups"], "auth_methods": ["authorization_code"], "authorization_endpoint": "http://keycloak.iam.svc.cluster.local:8080/auth/realms/master/protocol/openid-connect/auth", "token_endpoint": "http://keycloak.iam.svc.cluster.local:8080/auth/realms/master/protocol/openid-connect/token"}'
+          - name: KONG_ADMIN_GUI_LISTEN
+            value: '0.0.0.0:8002, 0.0.0.0:8445 ssl'
+          - name: KONG_ENFORCE_RBAC
+            value: "on"
+          - name: KONG_ADMIN_GUI_SESSION_CONF
+            value: '{"cookie_secure":false,"storage":"kong","cookie_name":"admin_session","cookie_lifetime":31557600,"cookie_samesite":"off","secret":"Test123!"}'
+          - name: KONG_PG_PASSWORD
+            value: kong
+          - name: KONG_PG_HOST
+            value: postgres
+          - name: KONG_PROXY_ACCESS_LOG
+            value: /dev/stdout
+          - name: KONG_ADMIN_ACCESS_LOG
+            value: /dev/stdout
+          - name: KONG_PROXY_ERROR_LOG
+            value: /dev/stderr
+          - name: KONG_ADMIN_ERROR_LOG
+            value: /dev/stderr
+          - name: KONG_LICENSE_DATA
+            valueFrom:
+              secretKeyRef:
+                name: kong-enterprise-license
+                key: license
+          - name: KONG_PORTAL
+            value: 'on'
+          - name: KONG_SMTP_MOCK
+            value: 'on'
+          - name: KONG_PORTAL_EMAILS_FROM
+            value: 'none@example.com'
+          - name: KONG_PORTAL_EMAILS_REPLY_TO
+            value: 'none@example.com'
+          - name: KONG_ADMIN_EMAILS_FROM
+            value: 'none@example.com'
+          - name: KONG_ADMIN_EMAILS_REPLY_TO
+            value: 'none@example.com'
+          - name: KONG_ADMIN_GUI_FLAGS
+            value: '{"IMMUNITY_ENABLED":true}'
+          - name: KONG_PORTAL_GUI_LISTEN
+            value: '0.0.0.0:8003, 0.0.0.0:8446 ssl'
+          - name: KONG_PORTAL_API_LISTEN
+            value: '0.0.0.0:8004, 0.0.0.0:8447 ssl'
+          - name: KONG_PORTAL_GUI_HOST
+            value: 'kong.local:8003'
+          - name: KONG_PORTAL_CORS_ORIGINS
+            value: 'http://kong.local:8003, http://kong.local:8004'
+          - name: KONG_PORTAL_GUI_PROTOCOL
+            value: http
+          - name: KONG_PORTAL_SESSION_CONF
+            value: '{"storage":"kong","cookie_name":"portal_session","secret":"Test123!","cookie_secure":false}'
+          - name: KONG_PORTAL_APP_AUTH
+            value: 'external-oauth2'
+          - name: KONG_PORTAL_AUTH
+            value: basic-auth
+          - name: KONG_ANONYMOUS_REPORTS
+            value: 'off'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: kong
+spec:
+  ports:
+  - name: pgql
+    port: 5432
+    protocol: TCP
+    targetPort: 5432
+  selector:
+    app: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: kong
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  serviceName: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_USER
+          value: kong
+        - name: POSTGRES_PASSWORD
+          value: kong
+        - name: POSTGRES_DB
+          value: kong
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        image: postgres:9.5
+        name: postgres
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: datadir
+          subPath: pgdata
+      terminationGracePeriodSeconds: 60
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kong-migrations
+  namespace: kong
+spec:
+  template:
+    metadata:
+      name: kong-migrations
+    spec:
+      containers:
+      - command:
+        - /bin/sh
+        - -c
+        - kong migrations bootstrap
+        env:
+        - name: KONG_LICENSE_DATA
+          valueFrom:
+            secretKeyRef:
+              key: license
+              name: kong-enterprise-license
+        - name: KONG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: kong-enterprise-superuser-password
+        - name: KONG_PG_PASSWORD
+          value: kong
+        - name: KONG_PG_HOST
+          value: postgres
+        - name: KONG_PG_PORT
+          value: "5432"
+        image: kong-docker-kong-gateway-docker.bintray.io/kong-enterprise-edition:2.3.2.0-alpine
+        name: kong-migrations
+      imagePullSecrets:
+      - name: kong-enterprise-edition-docker
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - until nc -zv $KONG_PG_HOST $KONG_PG_PORT -w1; do echo 'waiting for db'; sleep 1; done
+        env:
+        - name: KONG_PG_HOST
+          value: postgres
+        - name: KONG_PG_PORT
+          value: "5432"
+        image: busybox
+        name: wait-for-postgres
+      restartPolicy: OnFailure
