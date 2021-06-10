@@ -95,13 +95,7 @@ Create a secret to hold the license information
 ```
 kubectl create secret generic kong-enterprise-license --from-file=license=license.json -n kong
 ```
-Create a secret to hold your bintray details. Please replace <Username> and <Password>
-```
-kubectl create secret docker-registry kong-enterprise-edition-docker -n kong \
-    --docker-server=kong-docker-kong-enterprise-edition-docker.bintray.io \
-    --docker-username=<Username> \
-    --docker-password=<Password>
-```
+
 Create a password for Kong kong_admin user. Please replace <Password>
 ```
 kubectl create secret generic kong-enterprise-superuser-password -n kong --from-literal=password=<Password>
