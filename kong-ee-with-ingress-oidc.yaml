@@ -204,12 +204,10 @@ spec:
       labels:
         name: kong-enterprise
         app: kong
-    spec:
-      imagePullSecrets:
-        - name: kong-enterprise-edition-docker
+    spec:      
       containers:
       - name: kong
-        image: kong-docker-kong-gateway-docker.bintray.io/kong-enterprise-edition:2.3.2.0-alpine
+        image: kong/kong-gateway:2.4.1.0-alpine
         env:
           - name: KONG_ADMIN_LISTEN
             value: '0.0.0.0:8001, 0.0.0.0:8444 ssl'
@@ -368,10 +366,8 @@ spec:
           value: postgres
         - name: KONG_PG_PORT
           value: "5432"
-        image: kong-docker-kong-gateway-docker.bintray.io/kong-enterprise-edition:2.3.2.0-alpine
-        name: kong-migrations
-      imagePullSecrets:
-      - name: kong-enterprise-edition-docker
+        image: kong/kong-gateway:2.4.1.0-alpine
+        name: kong-migrations      
       initContainers:
       - command:
         - /bin/sh
